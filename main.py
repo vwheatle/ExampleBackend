@@ -1,63 +1,64 @@
+#!/usr/bin/env python
+
 import bottle
 import sqlite3
-
-def make_post(author="Someone", body=""):
-	con.execute("INSERT INTO posts (author, body) VALUES (?, ?)", (author, body))
 
 # https://bottlepy.org/docs/dev/recipes.html#ignore-trailing-slashes
 @bottle.hook('before_request')
 def strip_path():
 	bottle.request.environ['PATH_INFO'] = bottle.request.environ['PATH_INFO'].rstrip("/")
 
+@bottle.route("/static/<filepath:path>")
+def server_static(filepath):
+	return bottle.static_file(filepath, root="./static/")
+
+# https://bottlepy.org/docs/dev/tutorial.html#templates
+# https://bottlepy.org/docs/dev/tutorial.html#plugins
+# https://github.com/chucknado/bottle_heroku_tutorial
+
+def make_post(author="Someone", body=""):
+	con.execute("INSERT INTO posts (author, body) VALUES (?, ?)", (author, body))
+
+def delete_post(postId):
+	con.execute("DELETE FROM posts WHERE id = ?", (str(postId),))
+
 @bottle.route("/")
 def index():
+	s = ""
+	
 	posts = con.execute("SELECT * FROM posts").fetchall()
-	s = """
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<meta charset="utf-8" />
-		<title>Example Page</title>
-	</head>
-	<body>
-		<h1>Google Web Global Web page</h1>
-	"""
 	for post in posts:
-		s += bottle.template("""
-		<div class="post">
-			<small>Post #{{postId}} &ndash; {{postAuthor}}</small>
-			<p>{{postBody}}</p>
-		</div>
-		""", postId=post[0], postAuthor=post[1], postBody=post[2])
+		p = { 'id': post[0], 'author': post[1], 'body': post[2] }
+		s += bottle.template("post.tpl", **p)
 	if len(posts) == 0:
-		s += "<p>No posts.</p>"
-	s += """
-	</body>
-	</html>
-	"""
-	return s
+		s = "<p>No posts.</p>"
+	
+	s += bottle.template("compose.tpl")
+	
+	return bottle.template("main.tpl", {
+		'title': "Google Global Home page I forgot",
+		'content': s
+	})
 
 @bottle.post("/api/make_post")
 def index():
-	data = bottle.request
-	assert "Sorry this isn't complete" == None
+	postAuthor = bottle.request.forms.get("name")
+	postBody = bottle.request.forms.get("body")
+	
+	if postAuthor is None or postBody is None \
+	or postAuthor == "" or postBody == "":
+		return "fission mailed"
+	
+	make_post(postAuthor, postBody)
 
-# Questionable endpoint.
-@bottle.route("/hewwo/<name>")
-def index(name):
-	return bottle.template("""
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<meta charset="utf-8" />
-		<title>hewwo {{name}}!!!!!!</title>
-	</head>
-	<body>
-		<h1>OwO</h1>
-		<p>haiii {{name}}!! <i>*glomps u*</i></p>
-	</body>
-	</html>
-	""", name=name)
+@bottle.post("/api/delete_post")
+def index():
+	postId = bottle.request.forms.get("id")
+	
+	if postId is None:
+		return "fission mailed"
+	
+	delete_post(postId)
 
 if __name__ == "__main__":
 	con = sqlite3.connect("hewwo.db")
@@ -70,9 +71,6 @@ if __name__ == "__main__":
 		)
 	""")
 	
-	# make_post("V", "Example Post 1")
-	# make_post("V", "Example Post 2")
-	
-	bottle.run(host="localhost", port=8000)
+	bottle.run(host="localhost", port=8000, debug=True)
 	con.commit()
 	con.close()

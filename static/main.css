@@ -1,0 +1,39 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	
+	box-sizing: border-box;
+}
+
+body {
+	padding: 1em;
+	margin: 0 auto;
+	
+	font-family: sans-serif;
+	font-size: 12pt;
+	
+	max-width: 60em;
+}
+
+.post {
+	display: block;
+	
+	border: solid 1px blue;
+	background: lightblue;
+	border-radius: 0.25em;
+	
+	margin-block: 1em;
+	padding: 0.25em;
+}
+.postInfo {
+	margin-block: 0.5em;
+	font-style: italic;
+}
+.postDeleteForm { display: inline-block; margin-right: 0.25em }
+.postBody {
+	margin-block: 0.5em;
+}
+
+.spoilerButton:not([data-show]) + .spoiler {
+	display: none;
+}
